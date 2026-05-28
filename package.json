@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUMFI · Agente Exógena DIAN 2025</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --slate: #6b7280;
+    --muted: #9ca3af;
+    --border: #e5e7eb;
+    --surface: #f9fafb;
+    --white: #ffffff;
+    --blue: #2563eb;
+    --blue-l: #eff6ff;
+    --blue-m: #bfdbfe;
+    --green: #16a34a;
+    --green-l: #f0fdf4;
+    --amber: #d97706;
+    --amber-l: #fffbeb;
+    --red: #dc2626;
+    --red-l: #fef2f2;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; }
+
+  .topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-text { font-size: 17px; font-weight: 700; letter-spacing: -0.03em; }
+  .logo-badge { font-size: 11px; background: var(--blue-l); color: var(--blue); padding: 3px 8px; border-radius: 20px; font-weight: 500; }
+  .topbar-right { font-size: 12px; color: var(--slate); }
+
+  .main { max-width: 760px; margin: 0 auto; padding: 28px 16px 60px; }
+
+  .intro { text-align: center; margin-bottom: 28px; }
+  .intro h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
+  .intro p { font-size: 14px; color: var(--slate); line-height: 1.6; }
+  .intro .res-badge { display: inline-block; margin-top: 8px; font-size: 11px; background: var(--green-l); color: var(--green); padding: 3px 10px; border-radius: 20px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; }
+  .tab { flex: 1; padding: 8px 12px; text-align: center; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: var(--radius-sm); border: none; background: none; color: var(--slate); transition: all 0.15s; }
+  .tab.active { background: var(--blue); color: var(--white); }
+
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .card-desc { font-size: 13px; color: var(--slate); margin-bottom: 16px; }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--slate); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  input[type=text], select, textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 13px; color: var(--ink); background: var(--white); font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  textarea { min-height: 110px; resize: vertical; }
+
+  .btn { padding: 9px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--blue); color: var(--white); }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-ghost { background: none; border: 1px solid var(--border); color: var(--ink); }
+  .btn-ghost:hover { background: var(--surface); }
+
+  .result-box {
+    margin-top: 16px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 13px; line-height: 1.75; color: var(--ink);
+    white-space: pre-wrap; word-break: break-word; min-height: 60px;
+  }
+  .result-box.loading { color: var(--muted); font-style: italic; }
+  .result-box.error { background: var(--red-l); border-color: #fecaca; color: var(--red); }
+  .result-box.success { background: var(--green-l); border-color: #bbf7d0; }
+
+  .info-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+  .info-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .info-item .label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .info-item .value { font-size: 14px; font-weight: 600; margin-top: 2px; }
+  .value.urgent { color: var(--red); }
+  .value.soon { color: var(--amber); }
+  .value.ok { color: var(--green); }
+
+  .format-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .fmt-btn { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; background: var(--white); text-align: left; transition: all 0.15s; }
+  .fmt-btn:hover { border-color: var(--blue-m); background: var(--blue-l); }
+  .fmt-btn.active { border-color: var(--blue); background: var(--blue-l); }
+  .fmt-btn .fn { font-size: 12px; font-weight: 700; color: var(--ink); }
+  .fmt-btn .fd { font-size: 11px; color: var(--slate); margin-top: 2px; line-height: 1.4; }
+
+  .alert { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+  .alert.blue { background: var(--blue-l); color: #1d4ed8; border: 1px solid var(--blue-m); }
+  .alert.amber { background: var(--amber-l); color: #92400e; border: 1px solid #fde68a; }
+
+  .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .copy-btn { font-size: 11px; padding: 5px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; color: var(--slate); }
+  .copy-btn:hover { color: var(--ink); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .history-item { padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; cursor: pointer; }
+  .history-item:hover { background: var(--surface); }
+  .history-item .hq { font-size: 13px; font-weight: 500; }
+  .history-item .ha { font-size: 12px; color: var(--slate); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media(max-width:600px) {
+    .field-row { grid-template-columns: 1fr; }
+    .format-grid { grid-template-columns: repeat(2,1fr); }
+    .info-strip { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <span class="logo-text">LUMFI</span>
+    <span class="logo-badge">Exógena AG 2025</span>
+  </div>
+  <span class="topbar-right">Resolución DIAN 000227/2025</span>
+</div>
+
+<div class="main">
+  <div class="intro">
+    <h1>Agente de Información Exógena</h1>
+    <p>Consulta vencimientos, construye formatos y resuelve dudas sobre exógena AG 2025.<br>Sin registro. Sin instalación. Gratis para contadores.</p>
+    <span class="res-badge">Resolución 000227/2025 · Prevalidador DIAN · 299 contadores piloto</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('venc')">Vencimientos</button>
+    <button class="tab" onclick="switchTab('formatos')">Formatos</button>
+    <button class="tab" onclick="switchTab('consulta')">Consulta libre</button>
+    <button class="tab" onclick="switchTab('historial')">Historial</button>
+  </div>
+
+  <!-- VENCIMIENTOS -->
+  <div id="panel-venc" class="panel active">
+    <div class="card">
+      <div class="card-title">Consulta tu fecha límite</div>
+      <div class="card-desc">Ingresa el NIT de la empresa o persona que reporta.</div>
+      <div class="field-row">
+        <div class="field">
+          <label>NIT (sin dígito de verificación)</label>
+          <input type="text" id="nit" placeholder="Ej: 900123456" maxlength="15" oninput="this.value=this.value.replace(/\D/g,'')">
+        </div>
+        <div class="field">
+          <label>Categoría del declarante</label>
+          <select id="tipo-contrib">
+            <option value="pj">Persona jurídica / natural</option>
+            <option value="gc">Gran contribuyente</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="calcVenc()">Consultar fecha límite</button>
+
+      <div id="venc-strip" class="info-strip" style="display:none">
+        <div class="info-item">
+          <div class="label">Dígitos NIT</div>
+          <div class="value" id="venc-dig">—</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Fecha límite</div>
+          <div class="value" id="venc-fecha">—</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Días restantes</div>
+          <div class="value" id="venc-dias">—</div>
+        </div>
+      </div>
+      <div id="venc-detail" style="display:none;margin-top:12px;font-size:12px;color:var(--slate);line-height:1.6"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Calendario completo AG 2025</div>
+      <div class="card-desc">Personas jurídicas y naturales — plazos según dos últimos dígitos del NIT.</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:var(--surface)">
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600">Últimos 2 dígitos</th>
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600">Fecha límite 2026</th>
+            </tr>
+          </thead>
+          <tbody id="cal-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMATOS -->
+  <div id="panel-formatos" class="panel">
+    <div class="card">
+      <div class="card-title">Selecciona el formato</div>
+      <div class="card-desc">La IA genera el registro completo listo para el prevalidador DIAN.</div>
+      <div class="format-grid" id="format-grid"></div>
+
+      <div id="format-form" style="display:none">
+        <div class="alert blue" id="format-alert"></div>
+        <div class="field">
+          <label>Datos del tercero o transacción</label>
+          <textarea id="format-data" placeholder="Pega aquí los datos: NIT, razón social, valores, conceptos, fechas...&#10;&#10;Ejemplo: NIT 900123456-7, EMPRESA ABC SAS, honorarios enero 2025: $5.500.000, retención 11%: $605.000"></textarea>
+        </div>
+        <div class="field">
+          <label>NIT de la empresa que reporta (opcional)</label>
+          <input type="text" id="nit-reporta" placeholder="Ej: 800987654">
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="btn-format" onclick="processFormat()">Procesar con IA</button>
+          <button class="btn btn-ghost" onclick="clearFormat()">Limpiar</button>
+        </div>
+        <div class="result-box loading" id="format-result">Pega los datos del tercero y presiona Procesar.</div>
+        <div style="margin-top:8px;display:none" id="copy-wrap">
+          <button class="copy-btn" onclick="copyResult('format-result')">Copiar resultado</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONSULTA LIBRE -->
+  <div id="panel-consulta" class="panel">
+    <div class="card">
+      <div class="card-title">Pregunta sobre exógena DIAN</div>
+      <div class="card-desc">Cualquier duda sobre formatos, conceptos, obligaciones o validaciones AG 2025.</div>
+      <div class="alert amber">Respuestas basadas en Resolución 000227/2025. Verifica siempre con el prevalidador oficial DIAN.</div>
+      <div class="field">
+        <label>Tu pregunta</label>
+        <textarea id="consulta-text" placeholder="Ejemplos:&#10;· ¿Qué conceptos aplican para pagos de arrendamiento a persona natural en el F1001?&#10;· ¿Cuándo se debe reportar en F1007 vs F1001?&#10;· ¿Cómo reportar pagos a proveedores del exterior?&#10;· ¿Qué pasa si el NIT del tercero no está en el RUT?"></textarea>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-consulta" onclick="runConsulta()">Preguntar</button>
+      </div>
+      <div class="result-box" id="consulta-result" style="display:none"></div>
+      <div style="margin-top:8px;display:none" id="copy-consulta">
+        <button class="copy-btn" onclick="copyResult('consulta-result')">Copiar respuesta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div id="panel-historial" class="panel">
+    <div class="card">
+      <div class="card-title">Historial de consultas</div>
+      <div class="card-desc">Tus últimas consultas en esta sesión.</div>
+      <div id="historial-list">
+        <p style="font-size:13px;color:var(--muted)">Aún no hay consultas en esta sesión.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const VENC_GC = {1:'27 abr 2026',2:'28 abr 2026',3:'04 may 2026',4:'05 may 2026',5:'06 may 2026',6:'07 may 2026',7:'08 may 2026',8:'11 may 2026',9:'12 may 2026',0:'13 may 2026'};
+const VENC_PJ = [
+  ['01','05','14 may 2026'],['06','10','15 may 2026'],['11','15','19 may 2026'],
+  ['16','20','20 may 2026'],['21','25','21 may 2026'],['26','30','22 may 2026'],
+  ['31','35','25 may 2026'],['36','40','26 may 2026'],['41','45','27 may 2026'],
+  ['46','50','28 may 2026'],['51','55','29 may 2026'],['56','60','01 jun 2026'],
+  ['61','65','02 jun 2026'],['66','70','03 jun 2026'],['71','75','04 jun 2026'],
+  ['76','80','05 jun 2026'],['81','85','09 jun 2026'],['86','90','10 jun 2026'],
+  ['91','95','11 jun 2026'],['96','00','12 jun 2026'],
+];
+
+const FORMATS = [
+  {id:'1001',name:'F-1001',desc:'Pagos o abonos en cuenta y retenciones practicadas',sys:'Eres experto en el Formato 1001 de información exógena DIAN AG 2025 (Res. 000227/2025). Este formato reporta pagos o abonos en cuenta a terceros. Los conceptos principales incluyen: 5002 honorarios, 5003 comisiones, 5004 servicios, 5005 arrendamientos, 5006 intereses causados, 5007 compra activos movibles, 5008 compra activos fijos, 5010 aportes parafiscales, 5011 aportes EPS/ARL, 5012 aportes pensión, 5013 donaciones dinero, 5014 donaciones otros activos. Umbral: reportar terceros con pagos acumulados >= 100.000 UVT NO — se reportan todos sin umbral mínimo para grandes contribuyentes; para personas jurídicas y naturales, reportar si el pago acumulado al tercero supera $100.000 en el año. Genera el registro con: tipo documento, NIT/cédula, DV, nombres/razón social, concepto DIAN, valor bruto, retención, valor neto. Usa separador punto y coma para CSV.'},
+  {id:'1003',name:'F-1003',desc:'Retenciones en la fuente que le practicaron',sys:'Eres experto en el Formato 1003 de información exógena DIAN AG 2025 (Res. 000227/2025). Este formato reporta las retenciones en la fuente que agentes de retención le practicaron al declarante. Genera el registro con: tipo doc agente retenedor, NIT agente, DV, razón social agente, concepto retención, base, tarifa, valor retenido. Conceptos principales: 1001 honorarios 11%, 1003 servicios 4%, 1005 arrendamientos 3.5%.'},
+  {id:'1005',name:'F-1005',desc:'IVA descontable',sys:'Eres experto en el Formato 1005 de información exógena DIAN AG 2025 (Res. 000227/2025). Este formato reporta el IVA descontable (pagado en compras). Genera el registro con: tipo doc proveedor, NIT, DV, razón social, impuesto descontable, IVA en devoluciones de ventas. Solo reportar proveedores del régimen común (responsables de IVA).'},
+  {id:'1006',name:'F-1006',desc:'IVA generado e impuesto al consumo',sys:'Eres experto en el Formato 1006 de información exógena DIAN AG 2025 (Res. 000227/2025). Este formato reporta el IVA generado en ventas e impuesto al consumo. Genera el registro con: tipo doc cliente, NIT, DV, razón social, impuesto generado, IVA recuperado en devoluciones de compras, impuesto al consumo.'},
+  {id:'1007',name:'F-1007',desc:'Ingresos recibidos',sys:'Eres experto en el Formato 1007 de información exógena DIAN AG 2025 (Res. 000227/2025). Este formato reporta los ingresos recibidos por el declarante de sus clientes. Genera el registro con: tipo doc cliente, NIT, DV, razón social, concepto ingreso, valor bruto, descuentos, devoluciones, valor neto. Reportar clientes con ingresos acumulados que superen los montos establecidos.'},
+  {id:'1008',name:'F-1008',desc:'Saldos de cuentas por cobrar',sys:'Eres experto en el Formato 1008 de información exógena DIAN AG 2025 (Res. 000227/2025). Este formato reporta saldos de cuentas por cobrar al 31 de diciembre. Cuentas PUC: 13xx. Genera el registro con: concepto, tipo doc deudor, NIT, DV, nombres, razón social, saldo CxC al 31-12. Solo saldos positivos; excluir provisiones cuenta 1399.'},
+  {id:'1009',name:'F-1009',desc:'Saldos de cuentas por pagar',sys:'Eres experto en el Formato 1009 de información exógena DIAN AG 2025 (Res. 000227/2025). Este formato reporta saldos de cuentas por pagar al 31 de diciembre. Cuentas PUC: 22xx, 24xx. Genera el registro con: concepto, tipo doc acreedor, NIT, DV, nombres, razón social, saldo CxP al 31-12. Conceptos: 2205 proveedores nacionales, 2365 retención fuente, 2370 aportes nómina, 2405 obligaciones financieras.'},
+  {id:'1010',name:'F-1010',desc:'Socios, accionistas y comuneros',sys:'Eres experto en el Formato 1010 de información exógena DIAN AG 2025 (Res. 000227/2025). Este formato reporta socios, accionistas, comuneros y cooperados. Genera el registro con: tipo doc, NIT/cédula, DV, nombres, razón social, porcentaje participación, valor patrimonio, dividendos decretados en dinero, dividendos en acciones o partes alícuotas, valor retención dividendos.'},
+  {id:'2276',name:'F-2276',desc:'Vinculados económicos del exterior',sys:'Eres experto en el Formato 2276 de información exógena DIAN AG 2025 (Res. 000227/2025). Este formato reporta operaciones con vinculados económicos del exterior (precios de transferencia). Genera el registro con: tipo operación, país contraparte, tipo vinculado, NIT/ID extranjero, razón social, valor operación, método de precio de transferencia utilizado.'},
+];
+
+let selFormat = null;
+let historial = [];
+
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['venc','formatos','consulta','historial'][i]===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+}
+
+function parseDate(s) {
+  const months = {ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11};
+  const p = s.trim().split(' ');
+  return new Date(parseInt(p[2]), months[p[1].toLowerCase()], parseInt(p[0]));
+}
+
+function diffDays(d) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.ceil((d - today) / 86400000);
+}
+
+function calcVenc() {
+  const nit = document.getElementById('nit').value.trim();
+  const tipo = document.getElementById('tipo-contrib').value;
+  if (!nit || nit.length < 2) { alert('Ingresa un NIT válido'); return; }
+  let fecha = '', rango = '';
+
+  if (tipo === 'gc') {
+    const ult = parseInt(nit.slice(-1));
+    fecha = VENC_GC[ult];
+    rango = 'GC · dígito ' + ult;
+  } else {
+    const ult2 = parseInt(nit.slice(-2));
+    for (const [a, b, f] of VENC_PJ) {
+      const ai = parseInt(a), bi = parseInt(b);
+      const check = bi === 0 ? (ult2 >= 96 || ult2 === 0) : (ult2 >= ai && ult2 <= bi);
+      if (check) { fecha = f; rango = a + '–' + b; break; }
+    }
+  }
+
+  if (!fecha) return;
+  const fLim = parseDate(fecha);
+  const dias = diffDays(fLim);
+
+  document.getElementById('venc-dig').textContent = rango;
+  document.getElementById('venc-fecha').textContent = fecha;
+  const diasEl = document.getElementById('venc-dias');
+  diasEl.textContent = dias > 0 ? dias + ' días' : dias === 0 ? 'Hoy vence' : 'Vencido (' + Math.abs(dias) + ' días)';
+  diasEl.className = 'value ' + (dias <= 0 ? 'urgent' : dias <= 15 ? 'urgent' : dias <= 30 ? 'soon' : 'ok');
+  document.getElementById('venc-fecha').className = 'value ' + (dias <= 15 ? 'urgent' : dias <= 30 ? 'soon' : 'ok');
+
+  document.getElementById('venc-strip').style.display = 'grid';
+  document.getElementById('venc-detail').style.display = 'block';
+  document.getElementById('venc-detail').innerHTML =
+    tipo === 'gc'
+    ? '<strong>Gran Contribuyente:</strong> La fecha depende del último dígito del NIT. Presentación ante la DIAN vía MUISCA.'
+    : '<strong>Persona jurídica/natural:</strong> La fecha depende de los dos últimos dígitos del NIT. Presentación ante la DIAN vía MUISCA.';
+}
+
+(function buildCalendar() {
+  const tbody = document.getElementById('cal-table');
+  VENC_PJ.forEach(([a,b,f]) => {
+    const d = parseDate(f); const dias = diffDays(d);
+    const cl = dias <= 0 ? 'var(--red)' : dias <= 15 ? 'var(--red)' : dias <= 30 ? 'var(--amber)' : 'var(--ink)';
+    tbody.innerHTML += `<tr><td style="padding:6px 10px;border-bottom:1px solid var(--border)">${a === b ? a : a+' a '+b}</td><td style="padding:6px 10px;border-bottom:1px solid var(--border);color:${cl};font-weight:500">${f}</td></tr>`;
+  });
+})();
+
+(function buildFormats() {
+  const g = document.getElementById('format-grid');
+  FORMATS.forEach(f => {
+    const btn = document.createElement('button');
+    btn.className = 'fmt-btn';
+    btn.innerHTML = `<div class="fn">${f.name}</div><div class="fd">${f.desc}</div>`;
+    btn.onclick = () => selectFormat(f, btn);
+    g.appendChild(btn);
+  });
+})();
+
+function selectFormat(f, btn) {
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selFormat = f;
+  document.getElementById('format-alert').textContent = f.name + ': ' + f.desc;
+  document.getElementById('format-form').style.display = 'block';
+  document.getElementById('format-result').className = 'result-box loading';
+  document.getElementById('format-result').textContent = 'Pega los datos y presiona Procesar con IA.';
+  document.getElementById('copy-wrap').style.display = 'none';
+}
+
+function clearFormat() {
+  document.getElementById('format-data').value = '';
+  document.getElementById('nit-reporta').value = '';
+  document.getElementById('format-result').className = 'result-box loading';
+  document.getElementById('format-result').textContent = 'Pega los datos y presiona Procesar con IA.';
+  document.getElementById('copy-wrap').style.display = 'none';
+}
+
+async function processFormat() {
+  if (!selFormat) { alert('Selecciona un formato'); return; }
+  const data = document.getElementById('format-data').value.trim();
+  if (!data) { alert('Pega los datos del tercero'); return; }
+  const nitR = document.getElementById('nit-reporta').value.trim();
+  const btn = document.getElementById('btn-format');
+  const res = document.getElementById('format-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Procesando...';
+  res.className = 'result-box loading';
+  res.textContent = 'Analizando datos con normativa DIAN 2025...';
+
+  const userMsg = `Empresa que reporta NIT: ${nitR || 'no especificado'}\n\nDatos del tercero / transacción:\n${data}\n\nGenera el registro completo para el ${selFormat.name} con todos los campos requeridos por el prevalidador DIAN. Indica claramente cada campo y su valor. Si hay datos faltantes obligatorios, señálalos. Al final incluye una validación de consistencia.`;
+
+  const result = await callAPI(selFormat.sys, userMsg);
+  res.textContent = result.text || result.error;
+  res.className = result.error ? 'result-box error' : 'result-box success';
+  document.getElementById('copy-wrap').style.display = result.text ? 'block' : 'none';
+  btn.disabled = false;
+  btn.textContent = 'Procesar con IA';
+
+  if (result.text) addHistorial('Formato ' + selFormat.id, data.slice(0, 80), result.text);
+}
+
+async function runConsulta() {
+  const q = document.getElementById('consulta-text').value.trim();
+  if (!q) { alert('Escribe tu pregunta'); return; }
+  const btn = document.getElementById('btn-consulta');
+  const res = document.getElementById('consulta-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Consultando...';
+  res.style.display = 'block';
+  res.className = 'result-box loading';
+  res.textContent = 'Buscando en normativa DIAN...';
+
+  const sys = `Eres un experto en información exógena DIAN Colombia para el año gravable 2025.
+Normativa vigente: Resolución 000227/2025 (compilación de Res. 000162/2023 y Res. 000188/2024).
+Tipos de documento DIAN: 11=RC, 12=TI, 13=CC, 21=TE, 22=CE, 31=NIT, 41=Pasaporte, 42=Doc extranjero, 43=Sin ID.
+Responde de forma práctica y concisa. Cita el formato y concepto específico cuando aplique. Si hay ambigüedad normativa, indícala.`;
+
+  const result = await callAPI(sys, q);
+  res.textContent = result.text || result.error;
+  res.className = result.error ? 'result-box error' : 'result-box';
+  document.getElementById('copy-consulta').style.display = result.text ? 'block' : 'none';
+  btn.disabled = false;
+  btn.textContent = 'Preguntar';
+
+  if (result.text) addHistorial('Consulta', q.slice(0, 80), result.text);
+}
+
+async function callAPI(system, userMsg) {
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, messages: [{ role: 'user', content: userMsg }] }),
+    });
+    const data = await r.json();
+    if (!r.ok) return { error: 'Error ' + r.status + ': ' + (data.error || 'Sin detalle') };
+    return { text: data.text };
+  } catch (e) {
+    return { error: 'Error de conexión. Verifica tu internet e intenta de nuevo.' };
+  }
+}
+
+function addHistorial(tipo, pregunta, respuesta) {
+  historial.unshift({ tipo, pregunta, respuesta, time: new Date().toLocaleTimeString() });
+  renderHistorial();
+}
+
+function renderHistorial() {
+  const el = document.getElementById('historial-list');
+  if (!historial.length) { el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Aún no hay consultas.</p>'; return; }
+  el.innerHTML = historial.slice(0, 20).map((h, i) =>
+    `<div class="history-item" onclick="showHistItem(${i})">
+      <div class="hq">[${h.tipo}] ${h.pregunta}${h.pregunta.length >= 80 ? '...' : ''}</div>
+      <div class="ha">${h.time} · ${h.respuesta.slice(0, 100)}...</div>
+    </div>`
+  ).join('');
+}
+
+function showHistItem(i) {
+  const h = historial[i];
+  alert('[' + h.tipo + ']\n\n' + h.pregunta + '\n\n---\n\n' + h.respuesta);
+}
+
+function copyResult(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => alert('Copiado al portapapeles')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('Copiado');
+  });
+}
+</script>
+</body>
+</html>
